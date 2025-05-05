@@ -4,7 +4,7 @@ use colored::*;
 const ASCII_CHARS: &[char] = &['@', '#', '$', '%', '?', '*', '+', ';', ':', ',', '.'];
 
 fn main() {
-    let img_path = "./1209.jpg";
+    let img_path = "./examples/bouquet.jpg";
     let img = image::open(img_path).expect("[ERROR] Failed to open the image...");
     let (width, height) = img.dimensions();
 
