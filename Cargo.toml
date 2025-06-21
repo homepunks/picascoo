@@ -1,9 +1,12 @@
 [package]
 name = "picascoo"
-version = "1.0.1"
-author = ["REDACTED"]
-edition = "2025"
+version = "2.0.0"
+license = "Unlicense"
+edition = "2024"
 
 [dependencies]
 image = "0.25.6"
 colored = "3.0.0"
+anyhow = "1.0.98"
+ffmpeg-next = "7.1.0"
+crossterm = "0.29.0"
