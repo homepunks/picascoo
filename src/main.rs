@@ -4,6 +4,7 @@ use crossterm::{
     queue,
     style::{Print, ResetColor},
     terminal::{self, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
+    event::{self, Event, KeyCode},
 };
 use ffmpeg_next::{format, frame, media};
 use image::{GenericImageView, Pixel};
@@ -21,7 +22,6 @@ fn main() -> Result<()> {
         eprintln!("Usage: {} <image/video_path> [output_width]", args[0]);
         return Ok(());
     }
->>>>>>> 36d9d20 (Add video uploading functionality)
 
     let path = &args[1];
     let width = args.get(2).and_then(|w| w.parse().ok()).unwrap_or(100);
@@ -85,7 +85,15 @@ fn process_video(path: &str, width: u32) -> Result<()> {
     let max_width = std::cmp::min(width, term_width as u32);
     let mut prev_height = 0;
 
-    for (stream, packet) in ictx.packets() {
+    'video_loop: for (stream, packet) in ictx.packets() {
+        if event::poll(std::time::Duration::from_millis(0))? {
+            if let Event::Key(key_event) = event::read()? {
+                if key_event.code == KeyCode::Char('q') || key_event.code == KeyCode::Char('Q') {
+                    break 'video_loop;
+                }
+            }
+        }
+
         if stream.index() != stream_index {
             continue;
         }
@@ -93,6 +101,14 @@ fn process_video(path: &str, width: u32) -> Result<()> {
         decoder.send_packet(&packet)?;
         let mut decoded = frame::Video::empty();
         while decoder.receive_frame(&mut decoded).is_ok() {
+            if event::poll(std::time::Duration::from_millis(0))? {
+                if let Event::Key(key_event) = event::read()? {
+                    if key_event.code == KeyCode::Char('q') || key_event.code == KeyCode::Char('Q') {
+                        break 'video_loop;
+                    }
+                }
+            }
+
             let elapsed = start_time.elapsed().as_secs_f64();
             let target_time = frame_count as f64 * frame_delay;
             if elapsed < target_time {
@@ -109,7 +125,7 @@ fn process_video(path: &str, width: u32) -> Result<()> {
                 rgb_frame.height() as u32,
                 rgb_frame.data(0).to_vec(),
             )
-            .context("Failed to create image from frame")?;
+		.context("Failed to create image from frame")?;
 
             let ascii = image_to_ascii(
                 &image::DynamicImage::ImageRgb8(img),
@@ -159,7 +175,6 @@ fn process_video(path: &str, width: u32) -> Result<()> {
 
     Ok(())
 }
-
 fn image_to_ascii(img: &image::DynamicImage, new_width: u32) -> String {
     let (width, height) = img.dimensions();
     let aspect_ratio = height as f32 / width as f32;
