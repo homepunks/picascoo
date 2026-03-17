@@ -86,13 +86,11 @@ pub fn process_video(path: &str, width: u32) -> Result<()> {
 
     use std::io::Read;
     loop {
-        if event::poll(std::time::Duration::from_millis(0))? {
-            if let Event::Key(key_event) = event::read()? {
-                if key_event.code == KeyCode::Char('q') || key_event.code == KeyCode::Char('Q') {
+        if event::poll(std::time::Duration::from_millis(0))?
+            && let Event::Key(key_event) = event::read()?
+                && (key_event.code == KeyCode::Char('q') || key_event.code == KeyCode::Char('Q')) {
                     break;
                 }
-            }
-        }
 
         match reader.read_exact(&mut buf) {
             Ok(()) => {}
