@@ -1,5 +1,5 @@
 use anyhow::Result;
-use picascoo::{process_image, process_video, Cmd};
+use picascoo::{Cmd, process_image, process_video};
 use std::{env::args, fs};
 
 fn main() -> Result<()> {
@@ -10,8 +10,8 @@ fn main() -> Result<()> {
     }
 
     let cmd = Cmd {
-       path:  &args[1],
-       width: args.get(2).and_then(|w| w.parse().ok()).unwrap_or(100),
+        path: &args[1],
+        width: args.get(2).and_then(|w| w.parse().ok()).unwrap_or(100),
     };
 
     let file = fs::read(cmd.path).unwrap();

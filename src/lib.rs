@@ -8,12 +8,11 @@ use crossterm::{
 };
 use image::{GenericImageView, Pixel};
 use std::{
-    io::{self, Write, stdout},
-    time::{Instant, Duration},
-    process,
-    fmt::Write as FmtWrite,
-    thread,
     cmp,
+    fmt::Write as FmtWrite,
+    io::{self, Write, stdout},
+    process, thread,
+    time::{Duration, Instant},
 };
 
 const ASCII_CHARS: &[char] = &['@', '#', '$', '%', '?', '*', '+', ';', ':', ',', '.'];
@@ -35,10 +34,14 @@ pub fn process_image(cmd: Cmd) -> Result<()> {
 pub fn process_video(cmd: Cmd) -> Result<()> {
     let probe = process::Command::new("ffprobe")
         .args([
-            "-v", "error",
-            "-select_streams", "v:0",
-            "-show_entries", "stream=width,height,r_frame_rate",
-            "-of", "csv=p=0",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height,r_frame_rate",
+            "-of",
+            "csv=p=0",
             cmd.path,
         ])
         .output()
@@ -55,7 +58,10 @@ pub fn process_video(cmd: Cmd) -> Result<()> {
     let fps: f64 = {
         let rate_parts: Vec<&str> = parts[2].split('/').collect();
         let num: f64 = rate_parts[0].parse().unwrap_or(30.0);
-        let den: f64 = rate_parts.get(1).and_then(|d| d.parse().ok()).unwrap_or(1.0);
+        let den: f64 = rate_parts
+            .get(1)
+            .and_then(|d| d.parse().ok())
+            .unwrap_or(1.0);
         if den == 0.0 { 30.0 } else { num / den }
     };
 
@@ -66,11 +72,16 @@ pub fn process_video(cmd: Cmd) -> Result<()> {
 
     let mut child = process::Command::new("ffmpeg")
         .args([
-            "-i", cmd.path,
-            "-vf", &format!("scale={}:{}", max_width, out_height),
-            "-pix_fmt", "rgb24",
-            "-f", "rawvideo",
-            "-v", "quiet",
+            "-i",
+            cmd.path,
+            "-vf",
+            &format!("scale={}:{}", max_width, out_height),
+            "-pix_fmt",
+            "rgb24",
+            "-f",
+            "rawvideo",
+            "-v",
+            "quiet",
             "-",
         ])
         .stdout(process::Stdio::piped())
@@ -96,9 +107,10 @@ pub fn process_video(cmd: Cmd) -> Result<()> {
     loop {
         if event::poll(Duration::from_millis(0))?
             && let Event::Key(key_event) = event::read()?
-                && (key_event.code == KeyCode::Char('q') || key_event.code == KeyCode::Char('Q')) {
-                    break;
-                }
+            && (key_event.code == KeyCode::Char('q') || key_event.code == KeyCode::Char('Q'))
+        {
+            break;
+        }
 
         match reader.read_exact(&mut buf) {
             Ok(()) => {}
