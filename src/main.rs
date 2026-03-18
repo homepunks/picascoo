@@ -1,4 +1,4 @@
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use picascoo::{Cmd, process_image, process_video};
 use std::{env::args, fs::File, io::Read};
 
@@ -10,7 +10,7 @@ fn main() -> Result<()> {
     }
 
     let cmd = Cmd {
-        path: &args[1],
+        path: &args.get(1).unwrap(),
         width: args.get(2).and_then(|w| w.parse().ok()).unwrap_or(100),
         invert: args.iter().any(|a| a == "--invert"),
     };

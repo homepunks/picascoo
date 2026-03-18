@@ -133,7 +133,11 @@ pub fn process_video(cmd: Cmd) -> Result<()> {
                 let b = buf[offset + 2];
                 let brightness = (0.299 * r as f32 + 0.587 * g as f32 + 0.114 * b as f32) / 255.0;
                 let char_idx = (brightness * (ASCII_CHARS.len() - 1) as f32) as usize;
-                let c = if cmd.invert { ASCII_CHARS[ASCII_CHARS.len() - 1 - char_idx] } else { ASCII_CHARS[char_idx] };
+                let c = if cmd.invert {
+                    ASCII_CHARS[ASCII_CHARS.len() - 1 - char_idx]
+                } else {
+                    ASCII_CHARS[char_idx]
+                };
                 write!(ascii, "\x1b[38;2;{r};{g};{b}m{c}").unwrap();
             }
             ascii.push_str("\x1b[0m\n");
@@ -183,7 +187,11 @@ fn image_to_ascii(img: &image::DynamicImage, new_width: u32, invert: bool) -> St
             let pixel = resized_img.get_pixel(x, y);
             let brightness = pixel.to_luma()[0] as f32 / 255.0;
             let char_idx = (brightness * (ASCII_CHARS.len() - 1) as f32) as usize;
-            let ascii_char = if invert { ASCII_CHARS[ASCII_CHARS.len() - 1 - char_idx] } else { ASCII_CHARS[char_idx] };
+            let ascii_char = if invert {
+                ASCII_CHARS[ASCII_CHARS.len() - 1 - char_idx]
+            } else {
+                ASCII_CHARS[char_idx]
+            };
 
             let rgb = pixel.to_rgb();
             ascii_art.push_str(&format!(
