@@ -18,23 +18,28 @@ use std::{
 
 const ASCII_CHARS: &[char] = &['@', '#', '$', '%', '?', '*', '+', ';', ':', ',', '.'];
 
-pub fn process_image(path: &str, width: u32) -> Result<()> {
-    let img = image::open(path).context("Failed to open image")?;
-    let ascii = image_to_ascii(&img, width);
+pub struct Cmd<'a> {
+    pub path: &'a str,
+    pub width: u32,
+}
+
+pub fn process_image(cmd: Cmd) -> Result<()> {
+    let img = image::open(cmd.path).context("Failed to open image")?;
+    let ascii = image_to_ascii(&img, cmd.width);
     print!("{ascii}");
 
     print!("\x1b[0m");
     Ok(())
 }
 
-pub fn process_video(path: &str, width: u32) -> Result<()> {
+pub fn process_video(cmd: Cmd) -> Result<()> {
     let probe = process::Command::new("ffprobe")
         .args([
             "-v", "error",
             "-select_streams", "v:0",
             "-show_entries", "stream=width,height,r_frame_rate",
             "-of", "csv=p=0",
-            path,
+            cmd.path,
         ])
         .output()
         .context("Failed to run `ffprobe` -- is ffmpeg installed?")?;
@@ -55,13 +60,13 @@ pub fn process_video(path: &str, width: u32) -> Result<()> {
     };
 
     let (term_width, _) = terminal::size()?;
-    let max_width = cmp::min(width, term_width as u32);
+    let max_width = cmp::min(cmd.width, term_width as u32);
     let aspect_ratio = vid_height as f32 / vid_width as f32;
     let out_height = (max_width as f32 * aspect_ratio * 0.5) as u32;
 
     let mut child = process::Command::new("ffmpeg")
         .args([
-            "-i", path,
+            "-i", cmd.path,
             "-vf", &format!("scale={}:{}", max_width, out_height),
             "-pix_fmt", "rgb24",
             "-f", "rawvideo",

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use picascoo::{process_image, process_video};
+use picascoo::{process_image, process_video, Cmd};
 use std::{env::args, fs};
 
 fn main() -> Result<()> {
@@ -9,13 +9,15 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    let path = &args[1];
-    let width = args.get(2).and_then(|w| w.parse().ok()).unwrap_or(100);
+    let cmd = Cmd {
+       path:  &args[1],
+       width: args.get(2).and_then(|w| w.parse().ok()).unwrap_or(100),
+    };
 
-    let file = fs::read(path).unwrap();
+    let file = fs::read(cmd.path).unwrap();
     match (infer::is_image(&file), infer::is_video(&file)) {
-        (true, false) => process_image(path, width)?,
-        (false, true) => process_video(path, width)?,
+        (true, false) => process_image(cmd)?,
+        (false, true) => process_video(cmd)?,
         _ => anyhow::bail!("Unsupported file format"),
     }
 
