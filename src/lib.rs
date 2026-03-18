@@ -9,8 +9,11 @@ use crossterm::{
 use image::{GenericImageView, Pixel};
 use std::{
     io::{self, Write, stdout},
-    time::Instant,
+    time::{Instant, Duration},
     process,
+    fmt::Write as FmtWrite,
+    thread,
+    cmp,
 };
 
 const ASCII_CHARS: &[char] = &['@', '#', '$', '%', '?', '*', '+', ';', ':', ',', '.'];
@@ -52,7 +55,7 @@ pub fn process_video(path: &str, width: u32) -> Result<()> {
     };
 
     let (term_width, _) = terminal::size()?;
-    let max_width = std::cmp::min(width, term_width as u32);
+    let max_width = cmp::min(width, term_width as u32);
     let aspect_ratio = vid_height as f32 / vid_width as f32;
     let out_height = (max_width as f32 * aspect_ratio * 0.5) as u32;
 
@@ -86,7 +89,7 @@ pub fn process_video(path: &str, width: u32) -> Result<()> {
 
     use std::io::Read;
     loop {
-        if event::poll(std::time::Duration::from_millis(0))?
+        if event::poll(Duration::from_millis(0))?
             && let Event::Key(key_event) = event::read()?
                 && (key_event.code == KeyCode::Char('q') || key_event.code == KeyCode::Char('Q')) {
                     break;
@@ -100,12 +103,22 @@ pub fn process_video(path: &str, width: u32) -> Result<()> {
         let elapsed = start_time.elapsed().as_secs_f64();
         let target_time = frame_count as f64 * frame_delay;
         if elapsed < target_time {
-            std::thread::sleep(std::time::Duration::from_secs_f64(target_time - elapsed));
+            thread::sleep(Duration::from_secs_f64(target_time - elapsed));
         }
 
-        let img = image::RgbImage::from_raw(max_width, out_height, buf.clone())
-            .context("Failed to create image from frame")?;
-        let ascii = image_to_ascii(&image::DynamicImage::ImageRgb8(img), max_width);
+        let mut ascii = String::with_capacity((max_width * out_height * 20) as usize);
+        for y in 0..out_height {
+            for x in 0..max_width {
+                let offset = ((y * max_width + x) * 3) as usize;
+                let r = buf[offset];
+                let g = buf[offset + 1];
+                let b = buf[offset + 2];
+                let brightness = (0.299 * r as f32 + 0.587 * g as f32 + 0.114 * b as f32) / 255.0;
+                let char_index = (brightness * (ASCII_CHARS.len() - 1) as f32) as usize;
+                write!(ascii, "\x1b[38;2;{r};{g};{b}m{}", ASCII_CHARS[char_index]).unwrap();
+            }
+            ascii.push_str("\x1b[0m\n");
+        }
 
         queue!(stdout, MoveTo(0, 0))?;
         for (y, line) in ascii.lines().enumerate() {
