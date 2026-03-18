@@ -1,6 +1,6 @@
-use anyhow::Result;
+use anyhow::{Result, Context};
 use picascoo::{Cmd, process_image, process_video};
-use std::{env::args, fs};
+use std::{env::args, fs::File, io::Read};
 
 fn main() -> Result<()> {
     let args: Vec<String> = args().collect();
@@ -15,8 +15,11 @@ fn main() -> Result<()> {
         invert: args.iter().any(|a| a == "--invert"),
     };
 
-    let file = fs::read(cmd.path).unwrap();
-    match (infer::is_image(&file), infer::is_video(&file)) {
+    let mut file = File::open(cmd.path).with_context(|| format!("Could not open {}", cmd.path))?;
+    let mut header = [0u8; 16];
+    file.read_exact(&mut header)?;
+
+    match (infer::is_image(&header), infer::is_video(&header)) {
         (true, false) => process_image(cmd)?,
         (false, true) => process_video(cmd)?,
         _ => anyhow::bail!("Unsupported file format"),
