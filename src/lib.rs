@@ -20,11 +20,12 @@ const ASCII_CHARS: &[char] = &['@', '#', '$', '%', '?', '*', '+', ';', ':', ',',
 pub struct Cmd<'a> {
     pub path: &'a str,
     pub width: u32,
+    pub invert: bool,
 }
 
 pub fn process_image(cmd: Cmd) -> Result<()> {
     let img = image::open(cmd.path).context("Failed to open image")?;
-    let ascii = image_to_ascii(&img, cmd.width);
+    let ascii = image_to_ascii(&img, cmd.width, cmd.invert);
     print!("{ascii}");
 
     print!("\x1b[0m");
@@ -131,8 +132,9 @@ pub fn process_video(cmd: Cmd) -> Result<()> {
                 let g = buf[offset + 1];
                 let b = buf[offset + 2];
                 let brightness = (0.299 * r as f32 + 0.587 * g as f32 + 0.114 * b as f32) / 255.0;
-                let char_index = (brightness * (ASCII_CHARS.len() - 1) as f32) as usize;
-                write!(ascii, "\x1b[38;2;{r};{g};{b}m{}", ASCII_CHARS[char_index]).unwrap();
+                let char_idx = (brightness * (ASCII_CHARS.len() - 1) as f32) as usize;
+                let c = if cmd.invert { ASCII_CHARS[ASCII_CHARS.len() - 1 - char_idx] } else { ASCII_CHARS[char_idx] };
+                write!(ascii, "\x1b[38;2;{r};{g};{b}m{c}").unwrap();
             }
             ascii.push_str("\x1b[0m\n");
         }
@@ -169,7 +171,7 @@ pub fn process_video(cmd: Cmd) -> Result<()> {
     Ok(())
 }
 
-fn image_to_ascii(img: &image::DynamicImage, new_width: u32) -> String {
+fn image_to_ascii(img: &image::DynamicImage, new_width: u32, invert: bool) -> String {
     let (width, height) = img.dimensions();
     let aspect_ratio = height as f32 / width as f32;
     let new_height = (new_width as f32 * aspect_ratio * 0.5) as u32;
@@ -180,8 +182,8 @@ fn image_to_ascii(img: &image::DynamicImage, new_width: u32) -> String {
         for x in 0..new_width {
             let pixel = resized_img.get_pixel(x, y);
             let brightness = pixel.to_luma()[0] as f32 / 255.0;
-            let char_index = (brightness * (ASCII_CHARS.len() - 1) as f32) as usize;
-            let ascii_char = ASCII_CHARS[char_index];
+            let char_idx = (brightness * (ASCII_CHARS.len() - 1) as f32) as usize;
+            let ascii_char = if invert { ASCII_CHARS[ASCII_CHARS.len() - 1 - char_idx] } else { ASCII_CHARS[char_idx] };
 
             let rgb = pixel.to_rgb();
             ascii_art.push_str(&format!(

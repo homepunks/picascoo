@@ -12,6 +12,7 @@ fn main() -> Result<()> {
     let cmd = Cmd {
         path: &args[1],
         width: args.get(2).and_then(|w| w.parse().ok()).unwrap_or(100),
+        invert: args.iter().any(|a| a == "--invert"),
     };
 
     let file = fs::read(cmd.path).unwrap();
