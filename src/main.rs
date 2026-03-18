@@ -1,6 +1,6 @@
 use anyhow::Result;
 use picascoo::{process_image, process_video};
-use std::{env::args, path::Path};
+use std::{env::args, fs};
 
 fn main() -> Result<()> {
     let args: Vec<String> = args().collect();
@@ -12,14 +12,11 @@ fn main() -> Result<()> {
     let path = &args[1];
     let width = args.get(2).and_then(|w| w.parse().ok()).unwrap_or(100);
 
-    if let Some(ext) = Path::new(path).extension() {
-        match ext.to_str().unwrap() {
-            "jpg" | "jpeg" | "png" => process_image(path, width)?,
-            "mp4" | "avi" | "mov" => process_video(path, width)?,
-            _ => anyhow::bail!("Unsupported file format"),
-        }
-    } else {
-        anyhow::bail!("File has no extension");
+    let file = fs::read(path).unwrap();
+    match (infer::is_image(&file), infer::is_video(&file)) {
+        (true, false) => process_image(path, width)?,
+        (false, true) => process_video(path, width)?,
+        _ => anyhow::bail!("Unsupported file format"),
     }
 
     Ok(())
