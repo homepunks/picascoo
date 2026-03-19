@@ -105,6 +105,8 @@ pub fn process_video(cmd: Cmd) -> Result<()> {
     let start_time = Instant::now();
 
     use std::io::Read;
+
+    let mut ascii = String::with_capacity((max_width * out_height * 20) as usize);
     loop {
         if event::poll(Duration::from_millis(0))?
             && let Event::Key(key_event) = event::read()?
@@ -124,7 +126,7 @@ pub fn process_video(cmd: Cmd) -> Result<()> {
             thread::sleep(Duration::from_secs_f64(target_time - elapsed));
         }
 
-        let mut ascii = String::with_capacity((max_width * out_height * 20) as usize);
+        ascii.clear();
         for y in 0..out_height {
             for x in 0..max_width {
                 let offset = ((y * max_width + x) * 3) as usize;
